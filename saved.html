@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Recipes - WTFood</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #F59E0B;
+            --secondary: #1F2937;
+            --accent: #F97316;
+            --background: #FEFBF6;
+            --text: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+        
+        .font-display { font-family: 'Playfair Display', serif; }
+        .font-handwritten { font-family: 'Caveat', cursive; }
+        
+        .hero-bg {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            position: relative;
+        }
+        
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('./resources/recipe-card-1.jpg') center/cover;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .recipe-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .recipe-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .search-bar {
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 2px solid #E5E7EB;
+            background: white;
+            color: #6B7280;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        
+        .view-toggle {
+            display: flex;
+            background: #F3F4F6;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .view-toggle button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .view-toggle button.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6B7280;
+        }
+        
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal.open .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">👨‍🍳</span>
+                    <h1 class="font-display text-2xl font-bold text-gray-900">WTFood</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 transition-colors">Generator</a>
+                    <a href="about.html" class="text-gray-600 hover:text-gray-900 transition-colors">About</a>
+                    <a href="saved.html" class="text-gray-900 font-medium border-b-2 border-orange-400">Saved</a>
+                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="text-xl">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg py-16">
+        <div class="hero-content max-w-6xl mx-auto px-4">
+            <div class="text-center">
+                <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">
+                    Your Recipe Collection
+                </h2>
+                <p class="text-xl text-white/90 mb-8">
+                    All the recipes you've saved (and survived)
+                </p>
+                <div class="flex items-center justify-center space-x-4">
+                    <div class="bg-white/20 backdrop-blur-md rounded-lg px-4 py-2">
+                        <span class="text-white font-semibold" id="recipeCount">0</span>
+                        <span class="text-white/80"> recipes saved</span>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-md rounded-lg px-4 py-2">
+                        <span class="text-white font-semibold" id="favoriteCount">0</span>
+                        <span class="text-white/80"> favorites</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Search and Filter Controls -->
+        <div class="bg-white rounded-2xl p-6 mb-8 shadow-lg">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-md">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-bar pl-10" 
+                            placeholder="Search your recipes..."
+                        >
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+                    </div>
+                </div>
+                
+                <!-- Filter Buttons -->
+                <div class="flex flex-wrap gap-2">
+                    <button class="filter-btn active" data-filter="all">All Recipes</button>
+                    <button class="filter-btn" data-filter="recent">Recent</button>
+                    <button class="filter-btn" data-filter="favorites">Favorites</button>
+                    <button class="filter-btn" data-filter="sarcastic">Sarcastic</button>
+                    <button class="filter-btn" data-filter="polite">Polite</button>
+                </div>
+                
+                <!-- View Toggle -->
+                <div class="view-toggle">
+                    <button id="gridView" class="active" title="Grid View">
+                        <span>⊞</span>
+                    </button>
+                    <button id="listView" title="List View">
+                        <span>☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipe Grid -->
+        <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Recipes will be dynamically loaded here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+            <div class="icon">📚</div>
+            <h3 class="font-display text-2xl font-semibold mb-4">No Recipes Saved Yet</h3>
+            <p class="text-lg mb-6">Start generating and saving recipes to build your personal cookbook!</p>
+            <a href="index.html" class="inline-block bg-gradient-to-r from-orange-400 to-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-orange-500 hover:to-orange-700 transition-all">
+                🍳 Generate Your First Recipe
+            </a>
+        </div>
+
+        <!-- No Results State -->
+        <div id="noResultsState" class="empty-state hidden">
+            <div class="icon">🔍</div>
+            <h3 class="font-display text-2xl font-semibold mb-4">No Recipes Found</h3>
+            <p class="text-lg mb-6">Try adjusting your search or filter criteria.</p>
+            <button id="clearFilters" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                Clear Filters
+            </button>
+        </div>
+
+        <!-- Load More Button -->
+        <div class="text-center">
+            <button id="loadMoreBtn" class="bg-gradient-to-r from-orange-400 to-orange-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-orange-500 hover:to-orange-700 transition-all hidden">
+                Load More Recipes
+            </button>
+        </div>
+    </main>
+
+    <!-- Recipe Detail Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 id="modalRecipeName" class="font-display text-3xl font-bold text-gray-900"></h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                
+                <div class="mb-6">
+                    <p id="modalRecipeDescription" class="text-gray-600 text-lg"></p>
+                </div>
+                
+                <!-- Ingredients -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                        <span class="text-lg mr-2">🧂</span>
+                        Ingredients
+                    </h4>
+                    <div id="modalIngredientsList" class="flex flex-wrap gap-2 mb-4"></div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                        <span class="text-lg mr-2">👨‍🍳</span>
+                        Instructions
+                    </h4>
+                    <ol id="modalInstructionsList" class="space-y-3"></ol>
+                </div>
+                
+                <!-- Tip -->
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg mb-6">
+                    <p class="font-handwritten text-lg text-orange-800">
+                        <span class="text-xl mr-2">💡</span>
+                        <span id="modalRecipeTip"></span>
+                    </p>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex flex-wrap gap-3">
+                    <button id="modalDeleteBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        🗑️ Delete Recipe
+                    </button>
+                    <button id="modalShareBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        📤 Share Recipe
+                    </button>
+                    <button id="modalFavoriteBtn" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors">
+                        ⭐ Favorite
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-gray-600">
+                © 2025 WTFood - AI Recipe Generator. Made with 🤍 and a dash of sarcasm.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        class SavedRecipesApp {
+            constructor() {
+                this.recipes = this.loadSavedRecipes();
+                this.filteredRecipes = [...this.recipes];
+                this.currentView = 'grid';
+                this.currentFilter = 'all';
+                this.searchTerm = '';
+                this.currentPage = 1;
+                this.recipesPerPage = 9;
+                this.currentModalRecipe = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateStats();
+                this.renderRecipes();
+                this.updateEmptyState();
+            }
+
+            setupEventListeners() {
+                // Search
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value.toLowerCase();
+                    this.filterAndRender();
+                });
+
+                // Filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.filter;
+                        this.filterAndRender();
+                    });
+                });
+
+                // View toggle
+                document.getElementById('gridView').addEventListener('click', () => {
+                    this.switchView('grid');
+                });
+                document.getElementById('listView').addEventListener('click', () => {
+                    this.switchView('list');
+                });
+
+                // Clear filters
+                document.getElementById('clearFilters').addEventListener('click', () => {
+                    this.clearAllFilters();
+                });
+
+                // Modal events
+                document.getElementById('closeModal').addEventListener('click', () => {
+                    this.closeModal();
+                });
+
+                document.getElementById('modalDeleteBtn').addEventListener('click', () => {
+                    this.deleteCurrentModalRecipe();
+                });
+
+                document.getElementById('modalShareBtn').addEventListener('click', () => {
+                    this.shareCurrentModalRecipe();
+                });
+
+                document.getElementById('modalFavoriteBtn').addEventListener('click', () => {
+                    this.toggleCurrentModalFavorite();
+                });
+
+                // Dark mode toggle
+                document.getElementById('darkModeToggle').addEventListener('click', () => {
+                    this.toggleDarkMode();
+                });
+
+                // Close modal on outside click
+                document.getElementById('recipeModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'recipeModal') {
+                        this.closeModal();
+                    }
+                });
+            }
+
+            loadSavedRecipes() {
+                const saved = localStorage.getItem('wtfood-saved-recipes');
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            saveRecipesToStorage() {
+                localStorage.setItem('wtfood-saved-recipes', JSON.stringify(this.recipes));
+            }
+
+            updateStats() {
+                const recipeCount = this.recipes.length;
+                const favoriteCount = this.recipes.filter(recipe => recipe.favorite).length;
+                
+                document.getElementById('recipeCount').textContent = recipeCount;
+                document.getElementById('favoriteCount').textContent = favoriteCount;
+            }
+
+            filterAndRender() {
+                this.filteredRecipes = this.recipes.filter(recipe => {
+                    // Search filter
+                    if (this.searchTerm) {
+                        const searchMatch = 
+                            recipe.name.toLowerCase().includes(this.searchTerm) ||
+                            recipe.description.toLowerCase().includes(this.searchTerm) ||
+                            recipe.ingredients.some(ing => ing.toLowerCase().includes(this.searchTerm));
+                        if (!searchMatch) return false;
+                    }
+
+                    // Category filter
+                    if (this.currentFilter !== 'all') {
+                        switch (this.currentFilter) {
+                            case 'recent':
+                                const threeDaysAgo = new Date();
+                                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+                                return new Date(recipe.createdAt) > threeDaysAgo;
+                            case 'favorites':
+                                return recipe.favorite;
+                            case 'sarcastic':
+                                return recipe.personality === 'sarcastic';
+                            case 'polite':
+                                return recipe.personality === 'polite';
+                        }
+                    }
+
+                    return true;
+                });
+
+                this.currentPage = 1;
+                this.renderRecipes();
+                this.updateEmptyState();
+            }
+
+            renderRecipes() {
+                const grid = document.getElementById('recipeGrid');
+                const startIndex = (this.currentPage - 1) * this.recipesPerPage;
+                const endIndex = startIndex + this.recipesPerPage;
+                const recipesToShow = this.filteredRecipes.slice(0, endIndex);
+
+                if (recipesToShow.length === 0) {
+                    grid.innerHTML = '';
+                    return;
+                }
+
+                if (this.currentView === 'grid') {
+                    this.renderGridView(recipesToShow);
+                } else {
+                    this.renderListView(recipesToShow);
+                }
+
+                this.updateLoadMoreButton();
+            }
+
+            renderGridView(recipes) {
+                const grid = document.getElementById('recipeGrid');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8';
+                
+                grid.innerHTML = recipes.map(recipe => `
+                    <div class="recipe-card cursor-pointer fade-in" onclick="savedRecipesApp.openModal(${recipe.id})">
+                        <img src="./resources/recipe-card-2.jpg" alt="${recipe.name}" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-display text-xl font-bold text-gray-900">${recipe.name}</h3>
+                                <div class="flex space-x-1">
+                                    ${recipe.favorite ? '<span class="text-yellow-500">⭐</span>' : ''}
+                                    <span class="text-sm text-gray-500">${recipe.personality === 'sarcastic' ? '😏' : '🤖'}</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">${recipe.description}</p>
+                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                <span>${recipe.ingredients.length} ingredients</span>
+                                <span>${new Date(recipe.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-100">
+                                <div class="flex flex-wrap gap-1">
+                                    ${recipe.ingredients.slice(0, 3).map(ing => 
+                                        `<span class="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">${ing}</span>`
+                                    ).join('')}
+                                    ${recipe.ingredients.length > 3 ? `<span class="text-xs text-gray-500">+${recipe.ingredients.length - 3} more</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderListView(recipes) {
+                const grid = document.getElementById('recipeGrid');
+                grid.className = 'space-y-4 mb-8';
+                
+                grid.innerHTML = recipes.map(recipe => `
+                    <div class="recipe-card cursor-pointer fade-in flex" onclick="savedRecipesApp.openModal(${recipe.id})">
+                        <img src="./resources/recipe-card-2.jpg" alt="${recipe.name}" class="w-32 h-32 object-cover flex-shrink-0">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-display text-xl font-bold text-gray-900">${recipe.name}</h3>
+                                <div class="flex space-x-1">
+                                    ${recipe.favorite ? '<span class="text-yellow-500">⭐</span>' : ''}
+                                    <span class="text-sm text-gray-500">${recipe.personality === 'sarcastic' ? '😏' : '🤖'}</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 mb-3">${recipe.description}</p>
+                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                <span>${recipe.ingredients.length} ingredients</span>
+                                <span>${new Date(recipe.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateEmptyState() {
+                const emptyState = document.getElementById('emptyState');
+                const noResultsState = document.getElementById('noResultsState');
+                
+                if (this.recipes.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    noResultsState.classList.add('hidden');
+                } else if (this.filteredRecipes.length === 0) {
+                    emptyState.classList.add('hidden');
+                    noResultsState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                    noResultsState.classList.add('hidden');
+                }
+            }
+
+            updateLoadMoreButton() {
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                const hasMoreRecipes = this.filteredRecipes.length > this.currentPage * this.recipesPerPage;
+                
+                if (hasMoreRecipes) {
+                    loadMoreBtn.classList.remove('hidden');
+                    loadMoreBtn.onclick = () => {
+                        this.currentPage++;
+                        this.renderRecipes();
+                    };
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+            }
+
+            switchView(view) {
+                this.currentView = view;
+                document.getElementById('gridView').classList.toggle('active', view === 'grid');
+                document.getElementById('listView').classList.toggle('active', view === 'list');
+                this.renderRecipes();
+            }
+
+            clearAllFilters() {
+                this.searchTerm = '';
+                this.currentFilter = 'all';
+                document.getElementById('searchInput').value = '';
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+                this.filterAndRender();
+            }
+
+            openModal(recipeId) {
+                const recipe = this.recipes.find(r => r.id === recipeId);
+                if (!recipe) return;
+
+                this.currentModalRecipe = recipe;
+                
+                // Populate modal content
+                document.getElementById('modalRecipeName').textContent = recipe.name;
+                document.getElementById('modalRecipeDescription').textContent = recipe.description;
+                document.getElementById('modalRecipeTip').textContent = recipe.tip;
+                
+                // Ingredients
+                const ingredientsList = document.getElementById('modalIngredientsList');
+                ingredientsList.innerHTML = recipe.ingredients.map(ingredient => 
+                    `<span class="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">${ingredient}</span>`
+                ).join('');
+                
+                // Instructions
+                const instructionsList = document.getElementById('modalInstructionsList');
+                instructionsList.innerHTML = recipe.instructions.map((instruction, index) => 
+                    `<li class="flex items-start">
+                        <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold mr-3 mt-0.5 flex-shrink-0">${index + 1}</span>
+                        <span class="text-gray-700">${instruction}</span>
+                    </li>`
+                ).join('');
+                
+                // Update favorite button
+                const favoriteBtn = document.getElementById('modalFavoriteBtn');
+                favoriteBtn.innerHTML = recipe.favorite ? '⭐ Remove Favorite' : '⭐ Add Favorite';
+                
+                // Show modal
+                document.getElementById('recipeModal').classList.add('open');
+            }
+
+            closeModal() {
+                document.getElementById('recipeModal').classList.remove('open');
+                this.currentModalRecipe = null;
+            }
+
+            deleteCurrentModalRecipe() {
+                if (!this.currentModalRecipe) return;
+
+                if (confirm('Are you sure you want to delete this recipe?')) {
+                    this.recipes = this.recipes.filter(r => r.id !== this.currentModalRecipe.id);
+                    this.saveRecipesToStorage();
+                    this.closeModal();
+                    this.updateStats();
+                    this.filterAndRender();
+                    this.showNotification('Recipe deleted successfully', 'success');
+                }
+            }
+
+            shareCurrentModalRecipe() {
+                if (!this.currentModalRecipe) return;
+
+                const recipe = this.currentModalRecipe;
+                const shareText = `Check out this recipe: ${recipe.name}\n\nIngredients: ${recipe.ingredients.join(', ')}\n\nInstructions:\n${recipe.instructions.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nTip: ${recipe.tip}\n\nGenerated by WTFood - AI Recipe Generator`;
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: recipe.name,
+                        text: shareText
+                    }).catch(err => console.log('Error sharing:', err));
+                } else {
+                    navigator.clipboard.writeText(shareText).then(() => {
+                        this.showNotification('Recipe copied to clipboard!', 'success');
+                    });
+                }
+            }
+
+            toggleCurrentModalFavorite() {
+                if (!this.currentModalRecipe) return;
+
+                this.currentModalRecipe.favorite = !this.currentModalRecipe.favorite;
+                
+                // Update the recipe in the main array
+                const recipeIndex = this.recipes.findIndex(r => r.id === this.currentModalRecipe.id);
+                if (recipeIndex !== -1) {
+                    this.recipes[recipeIndex] = this.currentModalRecipe;
+                    this.saveRecipesToStorage();
+                    this.updateStats();
+                    
+                    // Update modal button
+                    const favoriteBtn = document.getElementById('modalFavoriteBtn');
+                    favoriteBtn.innerHTML = this.currentModalRecipe.favorite ? '⭐ Remove Favorite' : '⭐ Add Favorite';
+                    
+                    this.showNotification(
+                        this.currentModalRecipe.favorite ? 'Added to favorites!' : 'Removed from favorites',
+                        'success'
+                    );
+                    
+                    this.filterAndRender();
+                }
+            }
+
+            toggleDarkMode() {
+                document.body.classList.toggle('dark');
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                darkModeToggle.innerHTML = `<span class="text-xl">${document.body.classList.contains('dark') ? '☀️' : '🌙'}</span>`;
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                    type === 'success' ? 'bg-green-500 text-white' :
+                    type === 'warning' ? 'bg-yellow-500 text-white' :
+                    type === 'error' ? 'bg-red-500 text-white' :
+                    'bg-blue-500 text-white'
+                }`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuad'
+                });
+                
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuad',
+                        complete: () => notification.remove()
+                    });
+                }, 3000);
+            }
+        }
+
+        // Initialize the app
+        const savedRecipesApp = new SavedRecipesApp();
+    </script>
+</body>
+</html>

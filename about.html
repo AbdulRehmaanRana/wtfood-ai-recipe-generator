@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - WTFood</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+    
+    <style>
+        :root {
+            --primary: #F59E0B;
+            --secondary: #1F2937;
+            --accent: #F97316;
+            --background: #FEFBF6;
+            --text: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+        
+        .font-display { font-family: 'Playfair Display', serif; }
+        .font-handwritten { font-family: 'Caveat', cursive; }
+        
+        .hero-bg {
+            background: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+            position: relative;
+        }
+        
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('./resources/kitchen-tools.jpg') center/cover;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .step-card {
+            background: white;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+        
+        .step-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid #E5E7EB;
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            background: #F9FAFB;
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .faq-answer.open {
+            max-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">👨‍🍳</span>
+                    <h1 class="font-display text-2xl font-bold text-gray-900">WTFood</h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 transition-colors">Generator</a>
+                    <a href="about.html" class="text-gray-900 font-medium border-b-2 border-orange-400">About</a>
+                    <a href="saved.html" class="text-gray-600 hover:text-gray-900 transition-colors">Saved</a>
+                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="text-xl">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg py-20">
+        <div class="hero-content max-w-4xl mx-auto px-4 text-center">
+            <h2 class="font-display text-5xl md:text-6xl font-bold text-white mb-6">
+                About WTFood
+            </h2>
+            <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                Where AI meets culinary chaos and sarcasm meets sustenance
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        <!-- What is WTFood -->
+        <section class="mb-16 fade-in">
+            <div class="text-center mb-12">
+                <h3 class="font-display text-4xl font-bold text-gray-900 mb-4">What is WTFood?</h3>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    WTFood is a revolutionary AI-powered recipe generator that combines the practicality of cooking assistance 
+                    with the entertainment of a sarcastic chef who isn't afraid to roast you while you roast your dinner.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h4 class="font-display text-2xl font-semibold mb-4 text-gray-900">The Problem We Solve</h4>
+                    <p class="text-gray-600 mb-4">
+                        You stare into your fridge like it's a magic 8-ball, hoping dinner will materialize from the random 
+                        assortment of ingredients. The same old "what should I cook?" dilemma that has plagued humanity since 
+                        the invention of the refrigerator.
+                    </p>
+                    <p class="text-gray-600 mb-4">
+                        Traditional recipe apps are boring. They give you recipes, sure, but where's the personality? 
+                        Where's the entertainment? Where's the chef who tells you that your ingredient choices are questionable?
+                    </p>
+                    <p class="text-gray-600">
+                        That's where WTFood comes in. We don't just give you recipes - we give you an experience.
+                    </p>
+                </div>
+                <div class="relative">
+                    <img src="./resources/ingredients-bg.jpg" alt="Fresh Ingredients" class="rounded-2xl shadow-lg">
+                    <div class="absolute -bottom-4 -right-4 bg-white rounded-lg p-4 shadow-lg">
+                        <p class="font-handwritten text-lg text-orange-600">"Just throw it all together!"</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="mb-16 fade-in">
+            <div class="text-center mb-12">
+                <h3 class="font-display text-4xl font-bold text-gray-900 mb-4">How It Works</h3>
+                <p class="text-xl text-gray-600">Simple steps from chaos to cuisine (with attitude)</p>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="step-card p-6">
+                    <div class="flex items-center">
+                        <div class="bg-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mr-6 flex-shrink-0">1</div>
+                        <div>
+                            <h4 class="font-display text-xl font-semibold text-gray-900 mb-2">Tell Us What You Have</h4>
+                            <p class="text-gray-600">Type in whatever random ingredients are lurking in your kitchen. No judgment! (Okay, maybe a little judgment)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-card p-6">
+                    <div class="flex items-center">
+                        <div class="bg-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mr-6 flex-shrink-0">2</div>
+                        <div>
+                            <h4 class="font-display text-xl font-semibold text-gray-900 mb-2">Choose Your Chef Personality</h4>
+                            <p class="text-gray-600">Polite Chef for encouragement, or Sarcastic Chef for that authentic Gordon Ramsay experience (minus the screaming)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-card p-6">
+                    <div class="flex items-center">
+                        <div class="bg-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mr-6 flex-shrink-0">3</div>
+                        <div>
+                            <h4 class="font-display text-xl font-semibold text-gray-900 mb-2">Get Roasted & Recipe</h4>
+                            <p class="text-gray-600">Our AI analyzes your ingredients, judges your life choices, and generates a surprisingly edible recipe</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-card p-6">
+                    <div class="flex items-center">
+                        <div class="bg-orange-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold mr-6 flex-shrink-0">4</div>
+                        <div>
+                            <h4 class="font-display text-xl font-semibold text-gray-900 mb-2">Cook & Save</h4>
+                            <p class="text-gray-600">Follow the sarcastic instructions, enjoy your meal, and save the recipe if it didn't kill you</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="mb-16 fade-in">
+            <div class="text-center mb-12">
+                <h3 class="font-display text-4xl font-bold text-gray-900 mb-4">Features That Actually Matter</h3>
+                <p class="text-xl text-gray-600">Beyond just roasting your cooking skills</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">🤖</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Smart AI Generation</h4>
+                    <p class="text-gray-600">Advanced algorithms that understand ingredient combinations and cooking techniques</p>
+                </div>
+                
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">😏</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Dual Personality Modes</h4>
+                    <p class="text-gray-600">Switch between encouraging chef and sarcastic chef depending on your mood</p>
+                </div>
+                
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">💾</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Recipe Library</h4>
+                    <p class="text-gray-600">Save your favorite (or most embarrassing) recipes for future reference</p>
+                </div>
+                
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">📱</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Mobile Friendly</h4>
+                    <p class="text-gray-600">Works perfectly on your phone while you're staring into the fridge</p>
+                </div>
+                
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">🎨</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Beautiful Design</h4>
+                    <p class="text-gray-600">Because even sarcastic chefs appreciate good aesthetics</p>
+                </div>
+                
+                <div class="feature-card p-6 text-center">
+                    <div class="text-4xl mb-4">🆓</div>
+                    <h4 class="font-display text-xl font-semibold mb-3">Completely Free</h4>
+                    <p class="text-gray-600">All this sarcasm and functionality won't cost you a penny</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Example Recipes Carousel -->
+        <section class="mb-16 fade-in">
+            <div class="text-center mb-12">
+                <h3 class="font-display text-4xl font-bold text-gray-900 mb-4">Sample Roasts & Recipes</h3>
+                <p class="text-xl text-gray-600">See what you're getting yourself into</p>
+            </div>
+            
+            <div class="splide" id="recipe-carousel">
+                <div class="splide__track">
+                    <ul class="splide__list">
+                        <li class="splide__slide">
+                            <div class="feature-card p-6">
+                                <h4 class="font-display text-2xl font-bold mb-4">🍳 Scrambled Chaos</h4>
+                                <p class="text-gray-600 mb-4">"When you can't decide between breakfast and existential crisis"</p>
+                                <div class="space-y-2 text-sm text-gray-600">
+                                    <p><strong>Step 1:</strong> Beat the eggs like your Monday morning stress</p>
+                                    <p><strong>Step 2:</strong> Throw in chopped vegetables and cheese</p>
+                                    <p><strong>Step 3:</strong> Stir like you mean it</p>
+                                    <p><strong>Tip:</strong> It's edible. Probably.</p>
+                                </div>
+                            </div>
+                        </li>
+                        
+                        <li class="splide__slide">
+                            <div class="feature-card p-6">
+                                <h4 class="font-display text-2xl font-bold mb-4">🍝 Depression Pasta</h4>
+                                <p class="text-gray-600 mb-4">"For when you have pasta but not the will to live"</p>
+                                <div class="space-y-2 text-sm text-gray-600">
+                                    <p><strong>Step 1:</strong> Boil water (if you can find the energy)</p>
+                                    <p><strong>Step 2:</strong> Dump pasta in and hope for the best</p>
+                                    <p><strong>Step 3:</strong> Add whatever sauce-like substance you own</p>
+                                    <p><strong>Tip:</strong> Bonus points if you don't burn it.</p>
+                                </div>
+                            </div>
+                        </li>
+                        
+                        <li class="splide__slide">
+                            <div class="feature-card p-6">
+                                <h4 class="font-display text-2xl font-bold mb-4">🥪 Sad Sandwich</h4>
+                                <p class="text-gray-600 mb-4">"When you can't even be bothered to toast bread"</p>
+                                <div class="space-y-2 text-sm text-gray-600">
+                                    <p><strong>Step 1:</strong> Lay out bread like you're laying out your dreams</p>
+                                    <p><strong>Step 2:</strong> Add cheese because it's the only thing that loves you back</p>
+                                    <p><strong>Step 3:</strong> Squish together with the weight of your expectations</p>
+                                    <p><strong>Tip:</strong> Cutting it diagonally makes it 37% less depressing.</p>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="mb-16 fade-in">
+            <div class="text-center mb-12">
+                <h3 class="font-display text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h3>
+                <p class="text-xl text-gray-600">Because people actually ask these things</p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto space-y-4">
+                <div class="faq-item">
+                    <button class="faq-question w-full text-left p-6 font-semibold text-gray-900 hover:text-orange-600 transition-colors">
+                        Is the AI actually smart or just sassy?
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="text-gray-600">Both! Our AI has been trained on thousands of recipes and cooking techniques, but it's also been trained on the finest sarcasm money can buy. Think of it as having a very knowledgeable but slightly judgmental friend in your kitchen.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <button class="faq-question w-full text-left p-6 font-semibold text-gray-900 hover:text-orange-600 transition-colors">
+                        Will the recipes actually taste good?
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="text-gray-600">Surprisingly, yes! The AI understands flavor combinations and cooking principles. The sarcasm is just seasoning for your soul. However, we can't guarantee that your cooking skills will do justice to the recipe.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <button class="faq-question w-full text-left p-6 font-semibold text-gray-900 hover:text-orange-600 transition-colors">
+                        Can I switch off the sarcasm if it hurts my feelings?
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="text-gray-600">Absolutely! We have a "Polite Chef" mode for those delicate days when you need encouragement rather than roasting. But where's the fun in that? 😏</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <button class="faq-question w-full text-left p-6 font-semibold text-gray-900 hover:text-orange-600 transition-colors">
+                        What if I have literally nothing in my kitchen?
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="text-gray-600">The AI will probably roast you for having an empty kitchen, but it'll still try to help. It might suggest recipes involving air, water, and the power of imagination. Or just tell you to go grocery shopping.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <button class="faq-question w-full text-left p-6 font-semibold text-gray-900 hover:text-orange-600 transition-colors">
+                        Is this actually free or will you charge my soul later?
+                    </button>
+                    <div class="faq-answer px-6 pb-6">
+                        <p class="text-gray-600">Completely free! No hidden charges, no premium subscriptions, no soul-selling required. We believe everyone deserves access to sarcastic culinary guidance. Though if you want to pay us in cookies, we won't say no.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action -->
+        <section class="text-center fade-in">
+            <div class="bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl p-12 text-white">
+                <h3 class="font-display text-3xl font-bold mb-4">Ready to Get Roasted?</h3>
+                <p class="text-xl mb-8 opacity-90">
+                    Stop staring into your fridge like it owes you money. Start cooking with personality!
+                </p>
+                <a href="index.html" class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors">
+                    🍳 Try WTFood Now
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-gray-600">
+                © 2025 WTFood - AI Recipe Generator. Made with 🤍 and a dash of sarcasm.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Initialize carousel
+        document.addEventListener('DOMContentLoaded', function() {
+            new Splide('#recipe-carousel', {
+                type: 'loop',
+                perPage: 1,
+                perMove: 1,
+                gap: '2rem',
+                autoplay: true,
+                interval: 5000,
+                breakpoints: {
+                    768: {
+                        perPage: 1,
+                    }
+                }
+            }).mount();
+            
+            // FAQ functionality
+            const faqQuestions = document.querySelectorAll('.faq-question');
+            faqQuestions.forEach(question => {
+                question.addEventListener('click', () => {
+                    const answer = question.nextElementSibling;
+                    const isOpen = answer.classList.contains('open');
+                    
+                    // Close all other FAQs
+                    document.querySelectorAll('.faq-answer').forEach(a => {
+                        a.classList.remove('open');
+                    });
+                    
+                    // Toggle current FAQ
+                    if (!isOpen) {
+                        answer.classList.add('open');
+                    }
+                });
+            });
+            
+            // Dark mode toggle
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            darkModeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                darkModeToggle.innerHTML = `<span class="text-xl">${document.body.classList.contains('dark') ? '☀️' : '🌙'}</span>`;
+            });
+            
+            // Scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationDelay = '0s';
+                        entry.target.classList.add('fade-in');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.fade-in').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
