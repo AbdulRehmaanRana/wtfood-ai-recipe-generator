@@ -12,32 +12,34 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No ingredients provided." });
     }
 
-    // 🔐 Load your Gemini API key from environment variables
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-You are WTFood 🍳 — an AI chef who is ${mood === "sarcastic" ? "sarcastic, funny, and brutally honest" : "friendly, polite, and helpful"}.
+You are WTFood 🍳 — an AI chef who is ${
+      mood === "sarcastic"
+        ? "sarcastic, funny, and brutally honest"
+        : "friendly, polite, and helpful"
+    }.
 The user has these ingredients: ${ingredients}.
 Create a quick, simple, and delicious recipe using them.
 
-Your response MUST follow this format:
+Respond in this exact format:
 # Recipe Name
-A short and punchy one-line description.
+A short, catchy one-liner.
 
 ## Ingredients
-- list each ingredient clearly
+- each ingredient clearly
 
 ## Instructions
-1. step-by-step instructions
+1. clear steps
 
 ## Tip
-Add one fun or useful cooking tip related to the dish.
+One funny or helpful tip.
 `;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = result.response.text();
 
     res.status(200).json({ recipe: text });
   } catch (error) {
