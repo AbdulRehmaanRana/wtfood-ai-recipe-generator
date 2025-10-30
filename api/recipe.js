@@ -1,11 +1,14 @@
-// WTFood API - Recipe Generation Endpoint
-// This would normally use Google Gemini API, but for demo purposes we'll use mock data
+// api/recipe.js
+// Vercel Serverless Function for WTFood (Static site + Vercel functions)
+// Place this file at project-root/api/recipe.js
+// Uses CommonJS exports so no special bundling is required.
 
-export default async function handler(req, res) {
-  // Enable CORS
+module.exports = async (req, res) => {
+  // For demo, allow CORS (you can tighten this for production)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -16,27 +19,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { ingredients, personality = 'sarcastic' } = req.body;
-    
+    const body = req.body || {};
+    const { ingredients, personality = 'sarcastic' } = body;
+
     if (!ingredients || !Array.isArray(ingredients)) {
       return res.status(400).json({ error: 'Ingredients array is required' });
     }
 
-    // For demo purposes, we'll return mock data instead of calling Gemini API
-    // In production, you would use the actual Google Gemini API here
+    // Demo/mock: generate a recipe from templates
     const mockRecipe = generateMockRecipe(ingredients, personality);
-    
-    res.status(200).json(mockRecipe);
+
+    return res.status(200).json(mockRecipe);
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: 'Failed to generate recipe' });
+    console.error('API Error:', error && (error.stack || error));
+    return res.status(500).json({
+      error: 'Failed to generate recipe',
+      details: String(error && (error.message || error))
+    });
   }
-}
+};
 
 function generateMockRecipe(ingredients, personality) {
-  const ingredientList = ingredients.map(i => i.trim().toLowerCase());
-  
-  // Mock recipe templates
+  const ingredientList = ingredients.map(i => String(i).trim().toLowerCase());
+
   const sarcasticTemplates = [
     {
       name: "Kitchen Chaos Surprise",
@@ -45,75 +50,63 @@ function generateMockRecipe(ingredients, personality) {
         "Look at your ingredients and question your life choices",
         "Chop everything while contemplating your existence",
         "Toss it all in a pan like you're on a cooking show",
-        "Add seasoning until it smells less like depression",
-        "Serve with a side of regret and hot sauce"
+        "Add seasoning until it smells less like despair",
+        "Serve with a side of regret"
       ],
-      tip: "If it tastes bad, just add more cheese. Cheese fixes everything."
+      tip: "If it tastes bad, more cheese."
     },
     {
       name: "Depression Pasta Deluxe",
       description: "For when you have pasta but not the will to live",
       instructions: [
         "Boil water while staring into the void",
-        "Add pasta and contemplate your choices",
-        "Throw in whatever vegetables aren't completely dead",
+        "Add pasta and contemplate choices",
+        "Throw in vegetables that haven't given up yet",
         "Mix with the enthusiasm of a wet noodle",
         "Eat directly from the pot to save dishes"
       ],
-      tip: "Cutting it diagonally makes it 37% less depressing."
-    },
-    {
-      name: "Questionable Stir-Fry",
-      description: "Throwing random vegetables at heat and hoping",
-      instructions: [
-        "Chop everything while questioning your life choices",
-        "Heat oil in pan (or just imagine it's hot)",
-        "Toss in vegetables in order of how sad they look",
-        "Add sauce until it looks vaguely Asian",
-        "Stir frantically like you're on a cooking show"
-      ],
-      tip: "If it smells burnt, call it 'smoky flavor'."
+      tip: "Diagonal cuts = marginally better mood."
     }
   ];
 
   const politeTemplates = [
     {
       name: "Garden Fresh Delight",
-      description: "A wholesome dish using fresh, natural ingredients",
+      description: "A wholesome dish using fresh ingredients",
       instructions: [
         "Prepare all ingredients by washing and chopping",
-        "Heat a pan to medium temperature with a touch of oil",
-        "Add ingredients in order of cooking time required",
+        "Heat a pan with a touch of oil",
+        "Add ingredients in order of cooking time",
         "Season gently with herbs and spices",
-        "Cook until everything is tender and flavorful"
+        "Cook until tender and flavorful"
       ],
-      tip: "Fresh herbs make all the difference in bringing out natural flavors."
+      tip: "Fresh herbs make the dish sing."
     },
     {
       name: "Comfort Bowl",
-      description: "A nourishing meal to warm your soul",
+      description: "A nourishing bowl to warm your soul",
       instructions: [
-        "Start by preparing your base ingredients",
-        "Layer flavors by cooking aromatics first",
-        "Add main ingredients and cook with care",
-        "Season to taste with gentle spices",
-        "Serve hot and enjoy the comfort"
+        "Prepare base ingredients and aromatics",
+        "Layer flavors by sautéing aromatics first",
+        "Add main ingredients and simmer with care",
+        "Season to taste",
+        "Serve hot and enjoy"
       ],
-      tip: "Take your time - good food is worth the patience."
+      tip: "Patience improves depth of flavor."
     }
   ];
 
   const templates = personality === 'polite' ? politeTemplates : sarcasticTemplates;
-  const selectedTemplate = templates[Math.floor(Math.random() * templates.length)];
+  const selected = templates[Math.floor(Math.random() * templates.length)];
 
   return {
     id: Date.now(),
-    name: selectedTemplate.name,
-    description: selectedTemplate.description,
+    name: selected.name,
+    description: selected.description,
     ingredients: ingredientList,
-    instructions: selectedTemplate.instructions,
-    tip: selectedTemplate.tip,
-    personality: personality,
+    instructions: selected.instructions,
+    tip: selected.tip,
+    personality,
     createdAt: new Date().toISOString()
   };
 }
