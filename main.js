@@ -1,5 +1,11 @@
-// WTFood - Main JavaScript File
-// Recipe Generator with Sarcastic AI Personality
+// WTFood - Main JavaScript File (Hardened fetch + better error handling)
+//
+// Changes:
+// - Use absolute endpoint (window.location.origin + '/api/recipe')
+// - Set Accept header
+// - Inspect Content-Type before parsing JSON
+// - Catch JSON parse errors and fall back to mock recipe
+// - Log full server response text for debugging
 
 class WTFoodApp {
     constructor() {
@@ -72,11 +78,14 @@ class WTFoodApp {
         this.showLoadingMessage();
 
         try {
-            // Try to call the API endpoint
-            const response = await fetch('/api/recipe', {
+            // Use absolute endpoint to avoid path issues when hosted under different base path
+            const endpoint = `${window.location.origin}/api/recipe`;
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json' // ask for JSON explicitly
                 },
                 body: JSON.stringify({
                     ingredients: ingredients.split(',').map(i => i.trim()),
@@ -84,25 +93,65 @@ class WTFoodApp {
                 })
             });
 
-            if (response.ok) {
-                const recipe = await response.json();
-                this.currentRecipe = {
-                    ...recipe,
-                    ingredients: ingredients.split(',').map(i => i.trim().toLowerCase()),
-                    createdAt: new Date()
-                };
-                this.displayRecipe(this.currentRecipe);
-            } else {
-                // Fallback to mock recipe if API fails
+            // If server returned non-OK, read text for diagnostics and fallback to mock
+            if (!response.ok) {
+                const serverText = await safeReadText(response);
+                console.error('API returned non-OK status', response.status, serverText);
                 await this.generateMockRecipe(ingredients);
+                return;
             }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                // Unexpected content-type: read text (could be HTML error page) and fallback
+                const serverText = await safeReadText(response);
+                console.error('API returned non-JSON response:', serverText);
+                await this.generateMockRecipe(ingredients);
+                return;
+            }
+
+            // Now safely parse JSON with try/catch
+            let recipeData;
+            try {
+                recipeData = await response.json();
+            } catch (err) {
+                const serverText = await safeReadText(response);
+                console.error('Failed to parse JSON from API response:', err, serverText);
+                await this.generateMockRecipe(ingredients);
+                return;
+            }
+
+            // If the API returned an error payload
+            if (recipeData?.error) {
+                console.error('API returned error object:', recipeData);
+                await this.generateMockRecipe(ingredients);
+                return;
+            }
+
+            // Success: store and display
+            this.currentRecipe = {
+                ...recipeData,
+                ingredients: ingredients.split(',').map(i => i.trim().toLowerCase()),
+                createdAt: new Date()
+            };
+            this.displayRecipe(this.currentRecipe);
         } catch (error) {
             console.error('API call failed, using mock recipe:', error);
             // Fallback to mock recipe if API is not available
             await this.generateMockRecipe(ingredients);
+        } finally {
+            this.hideLoadingState();
         }
+    }
 
-        this.hideLoadingState();
+    // Helper to safely read response text without causing double consumption errors
+    async safeReadText(response) {
+        try {
+            // If the response body was already streamed earlier, this might fail — we handle exceptions
+            return await response.clone().text();
+        } catch (e) {
+            return `<unable to read response body: ${e.message}>`;
+        }
     }
 
     async generateMockRecipe(ingredients) {
@@ -157,17 +206,22 @@ class WTFoodApp {
 
         const randomMessage = messages[Math.floor(Math.random() * messages.length)];
         
-        // Typewriter effect
-        const typed = new Typed('#loadingText', {
-            strings: [randomMessage],
-            typeSpeed: 50,
-            showCursor: false,
-            onComplete: () => {
-                setTimeout(() => {
-                    loadingMessage.classList.add('hidden');
-                }, 1000);
-            }
-        });
+        // Typewriter effect (guard against Typed not being available)
+        if (window.Typed) {
+            const typed = new Typed('#loadingText', {
+                strings: [randomMessage],
+                typeSpeed: 50,
+                showCursor: false,
+                onComplete: () => {
+                    setTimeout(() => {
+                        loadingMessage.classList.add('hidden');
+                    }, 1000);
+                }
+            });
+        } else {
+            loadingText.textContent = randomMessage;
+            setTimeout(() => loadingMessage.classList.add('hidden'), 1200);
+        }
     }
 
     createMockRecipe(ingredients) {
@@ -343,16 +397,18 @@ class WTFoodApp {
         recipeOutput.classList.remove('hidden');
         
         // Animate recipe appearance
-        anime({
-            targets: '#recipeOutput',
-            opacity: [0, 1],
-            translateY: [20, 0],
-            duration: 600,
-            easing: 'easeOutQuad'
-        });
+        if (window.anime) {
+            anime({
+                targets: '#recipeOutput',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 600,
+                easing: 'easeOutQuad'
+            });
+        }
 
         // Animate recipe name with splitting
-        if (window.Splitting) {
+        if (window.Splitting && window.anime) {
             Splitting({ target: recipeName, by: 'chars' });
             anime({
                 targets: '#recipeName .char',
@@ -481,24 +537,30 @@ class WTFoodApp {
         document.body.appendChild(notification);
         
         // Animate in
-        anime({
-            targets: notification,
-            translateX: [300, 0],
-            opacity: [0, 1],
-            duration: 300,
-            easing: 'easeOutQuad'
-        });
+        if (window.anime) {
+            anime({
+                targets: notification,
+                translateX: [300, 0],
+                opacity: [0, 1],
+                duration: 300,
+                easing: 'easeOutQuad'
+            });
+        }
         
         // Remove after 3 seconds
         setTimeout(() => {
-            anime({
-                targets: notification,
-                translateX: [0, 300],
-                opacity: [1, 0],
-                duration: 300,
-                easing: 'easeInQuad',
-                complete: () => notification.remove()
-            });
+            if (window.anime) {
+                anime({
+                    targets: notification,
+                    translateX: [0, 300],
+                    opacity: [1, 0],
+                    duration: 300,
+                    easing: 'easeInQuad',
+                    complete: () => notification.remove()
+                });
+            } else {
+                notification.remove();
+            }
         }, 3000);
     }
 
@@ -607,13 +669,15 @@ document.addEventListener('scroll', () => {
         
         if (isVisible && !el.classList.contains('animated')) {
             el.classList.add('animated');
-            anime({
-                targets: el,
-                opacity: [0, 1],
-                translateY: [20, 0],
-                duration: 600,
-                easing: 'easeOutQuad'
-            });
+            if (window.anime) {
+                anime({
+                    targets: el,
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 600,
+                    easing: 'easeOutQuad'
+                });
+            }
         }
     });
 });
