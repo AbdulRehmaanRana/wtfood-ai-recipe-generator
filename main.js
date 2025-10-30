@@ -1,441 +1,619 @@
 // WTFood - Main JavaScript File
-// Recipe Generator with Sarcastic AI Personality (Gemini API version)
+// Recipe Generator with Sarcastic AI Personality
 
 class WTFoodApp {
-  constructor() {
-    this.isDarkMode = false;
-    this.isSarcasticMode = true;
-    this.savedRecipes = this.loadSavedRecipes();
-    this.currentRecipe = null;
-
-    this.init();
-  }
-
-  init() {
-    this.setupEventListeners();
-    this.initParticleSystem();
-    this.initTextAnimations();
-    this.loadDarkModePreference();
-  }
-
-  setupEventListeners() {
-    document.getElementById("generateBtn").addEventListener("click", () => {
-      this.generateRecipe();
-    });
-
-    document.getElementById("aiMoodToggle").addEventListener("change", (e) => {
-      this.isSarcasticMode = e.target.checked;
-      this.updateMoodDisplay();
-    });
-
-    document.getElementById("darkModeToggle").addEventListener("click", () => {
-      this.toggleDarkMode();
-    });
-
-    document.getElementById("saveRecipeBtn").addEventListener("click", () => {
-      this.saveCurrentRecipe();
-    });
-
-    document.getElementById("shareRecipeBtn").addEventListener("click", () => {
-      this.shareCurrentRecipe();
-    });
-
-    document.getElementById("generateAnotherBtn").addEventListener("click", () => {
-      this.generateRecipe();
-    });
-
-    document
-      .getElementById("tryDifferentIngredientsBtn")
-      .addEventListener("click", () => {
-        this.resetToInput();
-      });
-
-    document.getElementById("ingredients").addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && e.ctrlKey) {
-        this.generateRecipe();
-      }
-    });
-  }
-
-  // 🧠 Gemini API integration
-  async generateRecipe() {
-    const ingredients = document.getElementById("ingredients").value.trim();
-
-    if (!ingredients) {
-      this.showError("Please enter some ingredients first! 🤨");
-      return;
+    constructor() {
+        this.isDarkMode = false;
+        this.isSarcasticMode = true;
+        this.savedRecipes = this.loadSavedRecipes();
+        this.currentRecipe = null;
+        
+        this.init();
     }
 
-    this.showLoadingState();
-    this.showLoadingMessage();
+    init() {
+        this.setupEventListeners();
+        this.initParticleSystem();
+        this.initTextAnimations();
+        this.loadDarkModePreference();
+    }
 
-    try {
-      const res = await fetch("/api/recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ingredients,
-          mood: this.isSarcasticMode ? "sarcastic" : "polite",
-        }),
-      });
+    setupEventListeners() {
+        // Generate recipe button
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            this.generateRecipe();
+        });
 
-      const data = await res.json();
+        // AI mood toggle
+        document.getElementById('aiMoodToggle').addEventListener('change', (e) => {
+            this.isSarcasticMode = e.target.checked;
+            this.updateMoodDisplay();
+        });
 
-      if (data.recipe) {
-        const recipe = this.parseGeminiResponse(data.recipe);
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            this.toggleDarkMode();
+        });
+
+        // Recipe actions
+        document.getElementById('saveRecipeBtn').addEventListener('click', () => {
+            this.saveCurrentRecipe();
+        });
+
+        document.getElementById('shareRecipeBtn').addEventListener('click', () => {
+            this.shareCurrentRecipe();
+        });
+
+        document.getElementById('generateAnotherBtn').addEventListener('click', () => {
+            this.generateAnotherRecipe();
+        });
+
+        document.getElementById('tryDifferentIngredientsBtn').addEventListener('click', () => {
+            this.resetToInput();
+        });
+
+        // Enter key support for ingredients input
+        document.getElementById('ingredients').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                this.generateRecipe();
+            }
+        });
+    }
+
+    async generateRecipe() {
+        const ingredients = document.getElementById('ingredients').value.trim();
+        
+        if (!ingredients) {
+            this.showError('Please enter some ingredients first! 🤨');
+            return;
+        }
+
+        this.showLoadingState();
+        this.showLoadingMessage();
+
+        try {
+            // Try to call the API endpoint
+            const response = await fetch('/api/recipe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ingredients: ingredients.split(',').map(i => i.trim()),
+                    personality: this.isSarcasticMode ? 'sarcastic' : 'polite'
+                })
+            });
+
+            if (response.ok) {
+                const recipe = await response.json();
+                this.currentRecipe = {
+                    ...recipe,
+                    ingredients: ingredients.split(',').map(i => i.trim().toLowerCase()),
+                    createdAt: new Date()
+                };
+                this.displayRecipe(this.currentRecipe);
+            } else {
+                // Fallback to mock recipe if API fails
+                await this.generateMockRecipe(ingredients);
+            }
+        } catch (error) {
+            console.error('API call failed, using mock recipe:', error);
+            // Fallback to mock recipe if API is not available
+            await this.generateMockRecipe(ingredients);
+        }
+
+        this.hideLoadingState();
+    }
+
+    async generateMockRecipe(ingredients) {
+        // Simulate AI processing delay
+        await this.delay(2000 + Math.random() * 2000);
+        
+        const recipe = this.createMockRecipe(ingredients);
         this.displayRecipe(recipe);
-      } else {
-        this.showError("AI Chef burned something! Try again 🔥");
-      }
-    } catch (err) {
-      console.error(err);
-      this.showError("Something went wrong with the AI chef!");
     }
 
-    this.hideLoadingState();
-  }
-
-  // 🧩 Helper: Parse Gemini API response text into structured recipe
-  parseGeminiResponse(responseText) {
-    const lines = responseText.split("\n").filter((l) => l.trim() !== "");
-
-    const recipe = {
-      name: lines[0]?.replace(/^#+\s*/, "") || "Unnamed Dish",
-      description: lines[1] || "",
-      ingredients: [],
-      instructions: [],
-      tip: "",
-    };
-
-    let section = "";
-
-    for (const line of lines.slice(2)) {
-      if (/ingredients/i.test(line)) section = "ingredients";
-      else if (/instructions|steps/i.test(line)) section = "instructions";
-      else if (/tip/i.test(line)) section = "tip";
-      else {
-        if (section === "ingredients")
-          recipe.ingredients.push(line.replace(/^[-*•]\s*/, ""));
-        else if (section === "instructions")
-          recipe.instructions.push(line.replace(/^\d+\.\s*/, ""));
-        else if (section === "tip") recipe.tip += line + " ";
-      }
+    showLoadingState() {
+        const generateBtn = document.getElementById('generateBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        
+        generateBtn.disabled = true;
+        btnText.classList.add('hidden');
+        btnLoading.classList.remove('hidden');
     }
 
-    return recipe;
-  }
+    hideLoadingState() {
+        const generateBtn = document.getElementById('generateBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        
+        generateBtn.disabled = false;
+        btnText.classList.remove('hidden');
+        btnLoading.classList.add('hidden');
+    }
 
-  showLoadingState() {
-    const generateBtn = document.getElementById("generateBtn");
-    const btnText = document.getElementById("btnText");
-    const btnLoading = document.getElementById("btnLoading");
-
-    generateBtn.disabled = true;
-    btnText.classList.add("hidden");
-    btnLoading.classList.remove("hidden");
-  }
-
-  hideLoadingState() {
-    const generateBtn = document.getElementById("generateBtn");
-    const btnText = document.getElementById("btnText");
-    const btnLoading = document.getElementById("btnLoading");
-
-    generateBtn.disabled = false;
-    btnText.classList.remove("hidden");
-    btnLoading.classList.add("hidden");
-  }
-
-  showLoadingMessage() {
-    const loadingMessage = document.getElementById("loadingMessage");
-    const loadingText = document.getElementById("loadingText");
-
-    loadingMessage.classList.remove("hidden");
-
-    const messages = this.isSarcasticMode
-      ? [
-          "AI is judging your ingredient choices...",
-          "Trying to figure out what to do with that random stuff...",
-          "Consulting the ancient cookbook of sarcasm...",
-          "Attempting to make edible food from your chaos...",
-          "The chef is roasting you while roasting your ingredients...",
-          "Calculating the probability of this actually tasting good...",
-        ]
-      : [
-          "Analyzing your ingredients...",
-          "Searching for perfect recipe matches...",
-          "Consulting culinary expertise...",
-          "Creating a delicious recipe for you...",
+    showLoadingMessage() {
+        const loadingMessage = document.getElementById('loadingMessage');
+        const loadingText = document.getElementById('loadingText');
+        
+        loadingMessage.classList.remove('hidden');
+        
+        const messages = this.isSarcasticMode ? [
+            "AI is judging your ingredient choices...",
+            "Trying to figure out what to do with that random stuff...",
+            "Consulting the ancient cookbook of sarcasm...",
+            "Attempting to make edible food from your chaos...",
+            "The chef is roasting you while roasting your ingredients...",
+            "Calculating the probability of this actually tasting good...",
+            "Searching for recipes that match your questionable taste..."
+        ] : [
+            "Analyzing your ingredients...",
+            "Searching for perfect recipe matches...",
+            "Consulting culinary expertise...",
+            "Creating a delicious recipe for you...",
+            "Finding the best flavor combinations..."
         ];
 
-    const randomMessage =
-      messages[Math.floor(Math.random() * messages.length)];
-
-    const typed = new Typed("#loadingText", {
-      strings: [randomMessage],
-      typeSpeed: 50,
-      showCursor: false,
-      onComplete: () => {
-        setTimeout(() => {
-          loadingMessage.classList.add("hidden");
-        }, 1000);
-      },
-    });
-  }
-
-  displayRecipe(recipe) {
-    const recipeOutput = document.getElementById("recipeOutput");
-    const recipeName = document.getElementById("recipeName");
-    const recipeDescription = document.getElementById("recipeDescription");
-    const ingredientsList = document.getElementById("ingredientsList");
-    const instructionsList = document.getElementById("instructionsList");
-    const recipeTip = document.getElementById("recipeTip");
-
-    recipeName.textContent = `🍳 ${recipe.name}`;
-    recipeDescription.textContent = recipe.description;
-    recipeTip.textContent = recipe.tip;
-
-    ingredientsList.innerHTML = recipe.ingredients
-      .map(
-        (ingredient) =>
-          `<span class="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">${ingredient}</span>`
-      )
-      .join("");
-
-    instructionsList.innerHTML = recipe.instructions
-      .map(
-        (instruction, index) => `
-        <li class="flex items-start">
-          <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold mr-3 mt-0.5">${index + 1}</span>
-          <span class="text-gray-700">${instruction}</span>
-        </li>`
-      )
-      .join("");
-
-    recipeOutput.classList.remove("hidden");
-
-    anime({
-      targets: "#recipeOutput",
-      opacity: [0, 1],
-      translateY: [20, 0],
-      duration: 600,
-      easing: "easeOutQuad",
-    });
-
-    if (window.Splitting) {
-      Splitting({ target: recipeName, by: "chars" });
-      anime({
-        targets: "#recipeName .char",
-        opacity: [0, 1],
-        translateY: [20, 0],
-        delay: anime.stagger(50),
-        duration: 600,
-        easing: "easeOutQuad",
-      });
-    }
-
-    this.updateSaveButton();
-  }
-
-  saveCurrentRecipe() {
-    if (!this.currentRecipe) return;
-
-    const isAlreadySaved = this.savedRecipes.some(
-      (recipe) => recipe.id === this.currentRecipe.id
-    );
-
-    if (isAlreadySaved) {
-      this.showNotification("Recipe already saved! 🤦‍♂️", "warning");
-      return;
-    }
-
-    this.savedRecipes.push(this.currentRecipe);
-    this.saveRecipesToStorage();
-    this.updateSaveButton();
-    this.showNotification("Recipe saved successfully! 💾", "success");
-  }
-
-  shareCurrentRecipe() {
-    if (!this.currentRecipe) return;
-
-    const shareText = `Check out this recipe: ${this.currentRecipe.name}\n\nIngredients: ${this.currentRecipe.ingredients.join(
-      ", "
-    )}\n\nInstructions:\n${this.currentRecipe.instructions
-      .map((step, i) => `${i + 1}. ${step}`)
-      .join("\n")}\n\nTip: ${this.currentRecipe.tip}\n\nGenerated by WTFood 🍳`;
-
-    if (navigator.share) {
-      navigator.share({
-        title: this.currentRecipe.name,
-        text: shareText,
-      });
-    } else {
-      navigator.clipboard.writeText(shareText).then(() => {
-        this.showNotification("Recipe copied to clipboard! 📋", "success");
-      });
-    }
-  }
-
-  resetToInput() {
-    document.getElementById("recipeOutput").classList.add("hidden");
-    const input = document.getElementById("ingredients");
-    input.focus();
-    input.select();
-  }
-
-  updateSaveButton() {
-    const saveBtn = document.getElementById("saveRecipeBtn");
-    if (!this.currentRecipe) return;
-
-    const isSaved = this.savedRecipes.some(
-      (recipe) => recipe.id === this.currentRecipe.id
-    );
-    saveBtn.innerHTML = `<span class="text-xl">${
-      isSaved ? "❤️" : "🤍"
-    }</span>`;
-  }
-
-  updateMoodDisplay() {
-    console.log(
-      `Switched to ${this.isSarcasticMode ? "Sarcastic" : "Polite"} Chef Mode`
-    );
-  }
-
-  toggleDarkMode() {
-    this.isDarkMode = !this.isDarkMode;
-    document.body.classList.toggle("dark", this.isDarkMode);
-    document.getElementById("darkModeToggle").innerHTML = `<span class="text-xl">${
-      this.isDarkMode ? "☀️" : "🌙"
-    }</span>`;
-    localStorage.setItem("wtfood-darkmode", this.isDarkMode);
-  }
-
-  loadDarkModePreference() {
-    const saved = localStorage.getItem("wtfood-darkmode");
-    if (saved === "true") {
-      this.isDarkMode = true;
-      document.body.classList.add("dark");
-      document.getElementById(
-        "darkModeToggle"
-      ).innerHTML = `<span class="text-xl">☀️</span>`;
-    }
-  }
-
-  showError(message) {
-    const input = document.getElementById("ingredients");
-    input.classList.add("shake");
-
-    const errorDiv = document.createElement("div");
-    errorDiv.className = "text-red-500 text-sm mt-2";
-    errorDiv.textContent = message;
-    input.parentNode.appendChild(errorDiv);
-
-    setTimeout(() => {
-      input.classList.remove("shake");
-      errorDiv.remove();
-    }, 3000);
-  }
-
-  showNotification(message, type = "info") {
-    const notification = document.createElement("div");
-    notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 ${
-      type === "success"
-        ? "bg-green-500 text-white"
-        : type === "warning"
-        ? "bg-yellow-500 text-white"
-        : type === "error"
-        ? "bg-red-500 text-white"
-        : "bg-blue-500 text-white"
-    }`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    anime({
-      targets: notification,
-      translateX: [300, 0],
-      opacity: [0, 1],
-      duration: 300,
-      easing: "easeOutQuad",
-    });
-
-    setTimeout(() => {
-      anime({
-        targets: notification,
-        translateX: [0, 300],
-        opacity: [1, 0],
-        duration: 300,
-        easing: "easeInQuad",
-        complete: () => notification.remove(),
-      });
-    }, 3000);
-  }
-
-  // 🎆 Particle system (same as before)
-  initParticleSystem() {
-    const sketch = (p) => {
-      let particles = [];
-      p.setup = () => {
-        const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-        canvas.parent("particle-container");
-        for (let i = 0; i < 20; i++) particles.push(new Particle(p));
-      };
-      p.draw = () => {
-        p.clear();
-        particles.forEach((pt) => {
-          pt.update();
-          pt.draw();
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        
+        // Typewriter effect
+        const typed = new Typed('#loadingText', {
+            strings: [randomMessage],
+            typeSpeed: 50,
+            showCursor: false,
+            onComplete: () => {
+                setTimeout(() => {
+                    loadingMessage.classList.add('hidden');
+                }, 1000);
+            }
         });
-        particles = particles.filter((p) => p.isAlive());
-        while (particles.length < 20) particles.push(new Particle(p));
-      };
-      p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
-      class Particle {
-        constructor(p) {
-          this.p = p;
-          this.x = p.random(p.width);
-          this.y = p.height + 50;
-          this.vx = p.random(-0.5, 0.5);
-          this.vy = p.random(-2, -0.5);
-          this.life = 255;
-        }
-        update() {
-          this.x += this.vx;
-          this.y += this.vy;
-          this.life -= 1;
-        }
-        draw() {
-          this.p.fill(245, 158, 11, this.life);
-          this.p.noStroke();
-          this.p.ellipse(this.x, this.y, 6);
-        }
-        isAlive() {
-          return this.life > 0 && this.y > -50;
-        }
-      }
-    };
-    new p5(sketch);
-  }
+    }
 
-  initTextAnimations() {
-    if (window.Splitting) Splitting();
-  }
+    createMockRecipe(ingredients) {
+        const ingredientList = ingredients.split(',').map(i => i.trim().toLowerCase());
+        
+        // Recipe templates based on common ingredients
+        const recipes = this.getRecipeTemplates();
+        
+        // Find matching recipe based on ingredients
+        let selectedRecipe = recipes.find(recipe => 
+            recipe.requiredIngredients.some(req => ingredientList.includes(req))
+        ) || recipes[Math.floor(Math.random() * recipes.length)];
 
-  delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+        // Customize recipe based on available ingredients
+        const customizedRecipe = this.customizeRecipe(selectedRecipe, ingredientList);
+        
+        this.currentRecipe = {
+            ...customizedRecipe,
+            id: Date.now(),
+            ingredients: ingredientList,
+            createdAt: new Date()
+        };
 
-  loadSavedRecipes() {
-    const saved = localStorage.getItem("wtfood-saved-recipes");
-    return saved ? JSON.parse(saved) : [];
-  }
+        return this.currentRecipe;
+    }
 
-  saveRecipesToStorage() {
-    localStorage.setItem(
-      "wtfood-saved-recipes",
-      JSON.stringify(this.savedRecipes)
-    );
-  }
+    getRecipeTemplates() {
+        const sarcasticTemplates = [
+            {
+                name: "Scrambled Chaos",
+                description: "When you can't decide between breakfast and existential crisis",
+                requiredIngredients: ["egg", "eggs"],
+                instructions: [
+                    "Beat the eggs like your Monday morning stress",
+                    "Throw in whatever chopped vegetables you have",
+                    "Add cheese if you're feeling fancy (or sad)",
+                    "Stir like you mean it, unlike your last relationship",
+                    "Salt it till it tastes less like regret"
+                ],
+                tip: "It's edible. Probably."
+            },
+            {
+                name: "Depression Pasta",
+                description: "For when you have pasta but not the will to live",
+                requiredIngredients: ["pasta", "noodles"],
+                instructions: [
+                    "Boil water (if you can find the energy)",
+                    "Dump pasta in and hope for the best",
+                    "Add whatever sauce-like substance you own",
+                    "Mix with the enthusiasm of a wet noodle",
+                    "Eat directly from the pot to save dishes"
+                ],
+                tip: "Bonus points if you don't burn it."
+            },
+            {
+                name: "Questionable Stir-Fry",
+                description: "Throwing random vegetables at heat and hoping",
+                requiredIngredients: ["vegetable", "vegetables", "onion", "garlic"],
+                instructions: [
+                    "Chop everything while questioning your life choices",
+                    "Heat oil in pan (or just imagine it's hot)",
+                    "Toss in vegetables in order of how sad they look",
+                    "Add soy sauce until it looks vaguely Asian",
+                    "Stir frantically like you're on a cooking show"
+                ],
+                tip: "If it smells burnt, call it 'smoky flavor'."
+            },
+            {
+                name: "Sad Sandwich",
+                description: "When you can't even be bothered to toast bread",
+                requiredIngredients: ["bread", "cheese"],
+                instructions: [
+                    "Lay out bread like you're laying out your dreams",
+                    "Add cheese because it's the only thing that loves you back",
+                    "Consider adding vegetables, then don't",
+                    "Squish together with the weight of your expectations",
+                    "Eat while standing over the sink"
+                ],
+                tip: "Cutting it diagonally makes it 37% less depressing."
+            },
+            {
+                name: "Microwave Surprise",
+                description: "The surprise is how badly this could go",
+                requiredIngredients: ["rice", "chicken", "leftover"],
+                instructions: [
+                    "Dump everything in a bowl like your feelings",
+                    "Microwave on high until it smells questionable",
+                    "Stir halfway through if you're feeling responsible",
+                    "Let it cool while you question your decisions",
+                    "Eat with the enthusiasm of a tax audit"
+                ],
+                tip: "If the smoke alarm goes off, it's done."
+            }
+        ];
+
+        const politeTemplates = [
+            {
+                name: "Garden Fresh Scramble",
+                description: "A delightful breakfast dish using fresh ingredients",
+                requiredIngredients: ["egg", "eggs"],
+                instructions: [
+                    "Gently whisk the eggs in a bowl until well combined",
+                    "Prepare your vegetables by washing and chopping them",
+                    "Heat a non-stick pan over medium heat",
+                    "Add the eggs and gently fold in the vegetables",
+                    "Cook until just set and season to taste"
+                ],
+                tip: "For extra fluffiness, add a splash of milk to the eggs."
+            },
+            {
+                name: "Simple Pasta Delight",
+                description: "A comforting pasta dish that's easy to make",
+                requiredIngredients: ["pasta", "noodles"],
+                instructions: [
+                    "Bring a large pot of salted water to boil",
+                    "Cook pasta according to package directions",
+                    "Prepare your sauce ingredients while pasta cooks",
+                    "Drain pasta and toss with your favorite sauce",
+                    "Garnish with fresh herbs if available"
+                ],
+                tip: "Save some pasta water to help the sauce coat the noodles."
+            }
+        ];
+
+        return this.isSarcasticMode ? sarcasticTemplates : politeTemplates;
+    }
+
+    customizeRecipe(template, availableIngredients) {
+        const customized = { ...template };
+        
+        // Customize instructions based on available ingredients
+        customized.instructions = template.instructions.map(instruction => {
+            // Replace generic terms with specific ingredients
+            if (instruction.includes("vegetables") && availableIngredients.some(i => i.includes("tomato"))) {
+                return instruction.replace("vegetables", "tomatoes");
+            }
+            if (instruction.includes("sauce") && availableIngredients.some(i => i.includes("cheese"))) {
+                return instruction.replace("sauce", "cheese");
+            }
+            return instruction;
+        });
+
+        return customized;
+    }
+
+    displayRecipe(recipe) {
+        const recipeOutput = document.getElementById('recipeOutput');
+        const recipeName = document.getElementById('recipeName');
+        const recipeDescription = document.getElementById('recipeDescription');
+        const ingredientsList = document.getElementById('ingredientsList');
+        const instructionsList = document.getElementById('instructionsList');
+        const recipeTip = document.getElementById('recipeTip');
+
+        // Populate recipe details
+        recipeName.textContent = `🍳 ${recipe.name}`;
+        recipeDescription.textContent = recipe.description;
+        recipeTip.textContent = recipe.tip;
+
+        // Display ingredients as tags
+        ingredientsList.innerHTML = recipe.ingredients.map(ingredient => 
+            `<span class="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">${ingredient}</span>`
+        ).join('');
+
+        // Display instructions
+        instructionsList.innerHTML = recipe.instructions.map((instruction, index) => 
+            `<li class="flex items-start">
+                <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-semibold mr-3 mt-0.5 flex-shrink-0">${index + 1}</span>
+                <span class="text-gray-700">${instruction}</span>
+            </li>`
+        ).join('');
+
+        // Show the recipe with animation
+        recipeOutput.classList.remove('hidden');
+        
+        // Animate recipe appearance
+        anime({
+            targets: '#recipeOutput',
+            opacity: [0, 1],
+            translateY: [20, 0],
+            duration: 600,
+            easing: 'easeOutQuad'
+        });
+
+        // Animate recipe name with splitting
+        if (window.Splitting) {
+            Splitting({ target: recipeName, by: 'chars' });
+            anime({
+                targets: '#recipeName .char',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(50),
+                duration: 600,
+                easing: 'easeOutQuad'
+            });
+        }
+
+        // Update save button state
+        this.updateSaveButton();
+    }
+
+    saveCurrentRecipe() {
+        if (!this.currentRecipe) return;
+
+        // Check if already saved
+        const isAlreadySaved = this.savedRecipes.some(recipe => recipe.id === this.currentRecipe.id);
+        
+        if (isAlreadySaved) {
+            this.showNotification('Recipe already saved! 🤦‍♂️', 'warning');
+            return;
+        }
+
+        this.savedRecipes.push(this.currentRecipe);
+        this.saveRecipesToStorage();
+        this.updateSaveButton();
+        this.showNotification('Recipe saved successfully! 💾', 'success');
+    }
+
+    shareCurrentRecipe() {
+        if (!this.currentRecipe) return;
+
+        const shareText = `Check out this recipe: ${this.currentRecipe.name}\n\nIngredients: ${this.currentRecipe.ingredients.join(', ')}\n\nInstructions:\n${this.currentRecipe.instructions.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nTip: ${this.currentRecipe.tip}\n\nGenerated by WTFood - AI Recipe Generator`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: this.currentRecipe.name,
+                text: shareText
+            }).catch(err => console.log('Error sharing:', err));
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(shareText).then(() => {
+                this.showNotification('Recipe copied to clipboard! 📋', 'success');
+            });
+        }
+    }
+
+    generateAnotherRecipe() {
+        // Keep current ingredients and generate a new recipe
+        this.generateRecipe();
+    }
+
+    resetToInput() {
+        const recipeOutput = document.getElementById('recipeOutput');
+        const ingredientsInput = document.getElementById('ingredients');
+        
+        recipeOutput.classList.add('hidden');
+        ingredientsInput.focus();
+        ingredientsInput.select();
+    }
+
+    updateSaveButton() {
+        const saveBtn = document.getElementById('saveRecipeBtn');
+        if (!this.currentRecipe) return;
+
+        const isSaved = this.savedRecipes.some(recipe => recipe.id === this.currentRecipe.id);
+        saveBtn.innerHTML = `<span class="text-xl">${isSaved ? '❤️' : '🤍'}</span>`;
+    }
+
+    updateMoodDisplay() {
+        // Update UI based on AI mood
+        const moodText = this.isSarcasticMode ? 'Sarcastic Chef Mode' : 'Polite Chef Mode';
+        console.log(`Switched to ${moodText}`);
+    }
+
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        document.body.classList.toggle('dark', this.isDarkMode);
+        
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.innerHTML = `<span class="text-xl">${this.isDarkMode ? '☀️' : '🌙'}</span>`;
+        
+        localStorage.setItem('wtfood-darkmode', this.isDarkMode);
+    }
+
+    loadDarkModePreference() {
+        const saved = localStorage.getItem('wtfood-darkmode');
+        if (saved === 'true') {
+            this.isDarkMode = true;
+            document.body.classList.add('dark');
+            document.getElementById('darkModeToggle').innerHTML = '<span class="text-xl">☀️</span>';
+        }
+    }
+
+    showError(message) {
+        const ingredientsInput = document.getElementById('ingredients');
+        ingredientsInput.classList.add('shake');
+        
+        // Create error message element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'text-red-500 text-sm mt-2';
+        errorDiv.textContent = message;
+        
+        ingredientsInput.parentNode.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            ingredientsInput.classList.remove('shake');
+            errorDiv.remove();
+        }, 3000);
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'warning' ? 'bg-yellow-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        anime({
+            targets: notification,
+            translateX: [300, 0],
+            opacity: [0, 1],
+            duration: 300,
+            easing: 'easeOutQuad'
+        });
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            anime({
+                targets: notification,
+                translateX: [0, 300],
+                opacity: [1, 0],
+                duration: 300,
+                easing: 'easeInQuad',
+                complete: () => notification.remove()
+            });
+        }, 3000);
+    }
+
+    initParticleSystem() {
+        // Simple particle system using p5.js
+        const sketch = (p) => {
+            let particles = [];
+            
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('particle-container');
+                
+                // Create initial particles
+                for (let i = 0; i < 20; i++) {
+                    particles.push(new Particle(p));
+                }
+            };
+            
+            p.draw = () => {
+                p.clear();
+                
+                // Update and draw particles
+                particles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+                
+                // Remove dead particles and add new ones
+                particles = particles.filter(p => p.isAlive());
+                while (particles.length < 20) {
+                    particles.push(new Particle(p));
+                }
+            };
+            
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+            
+            class Particle {
+                constructor(p) {
+                    this.p = p;
+                    this.x = p.random(p.width);
+                    this.y = p.height + 50;
+                    this.vx = p.random(-0.5, 0.5);
+                    this.vy = p.random(-2, -0.5);
+                    this.alpha = 255;
+                    this.size = p.random(3, 8);
+                    this.life = 255;
+                }
+                
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.life -= 1;
+                    this.alpha = this.life;
+                }
+                
+                draw() {
+                    this.p.fill(245, 158, 11, this.alpha);
+                    this.p.noStroke();
+                    this.p.ellipse(this.x, this.y, this.size);
+                }
+                
+                isAlive() {
+                    return this.life > 0 && this.y > -50;
+                }
+            }
+        };
+        
+        new p5(sketch);
+    }
+
+    initTextAnimations() {
+        // Initialize text splitting for animations
+        if (window.Splitting) {
+            Splitting();
+        }
+    }
+
+    // Utility functions
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    loadSavedRecipes() {
+        const saved = localStorage.getItem('wtfood-saved-recipes');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveRecipesToStorage() {
+        localStorage.setItem('wtfood-saved-recipes', JSON.stringify(this.savedRecipes));
+    }
 }
 
-// Initialize
-document.addEventListener("DOMContentLoaded", () => new WTFoodApp());
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new WTFoodApp();
+});
+
+// Add some scroll animations
+document.addEventListener('scroll', () => {
+    const elements = document.querySelectorAll('.fade-in');
+    elements.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight * 0.8;
+        
+        if (isVisible && !el.classList.contains('animated')) {
+            el.classList.add('animated');
+            anime({
+                targets: el,
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 600,
+                easing: 'easeOutQuad'
+            });
+        }
+    });
+});

@@ -1,9 +1,17 @@
 {
   "name": "wtfood-ai-recipe-generator",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
+  "description": "AI-powered recipe generator with sarcastic personality",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.18.0"
+    "@google/generative-ai": "^0.1.0"
+  },
+  "devDependencies": {
+    "vite": "^4.0.0"
   }
 }

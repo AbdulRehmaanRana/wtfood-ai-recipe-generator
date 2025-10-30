@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/recipe.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "env": {
+    "GEMINI_API_KEY": "@gemini-api-key"
+  }
+}
